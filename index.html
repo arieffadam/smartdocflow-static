@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartDocFlow Upload</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto; }
+    h2 { margin-bottom: 1rem; }
+    iframe { width: 100%; height: 300px; margin-top: 1rem; }
+    #status { margin-top: 1rem; color: green; }
+    button { padding: 0.5rem 1rem; margin-top: 1rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Upload Your Document</h2>
+  <input type="file" id="fileInput" accept="application/pdf,image/*" />
+  <iframe id="preview" title="Preview"></iframe>
+  <br />
+  <button onclick="handleUpload()">Upload</button>
+  <p id="status"></p>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const status = document.getElementById('status');
+    let selectedFile = null;
+
+    fileInput.addEventListener('change', (e) => {
+      selectedFile = e.target.files[0];
+      if (selectedFile) {
+        const url = URL.createObjectURL(selectedFile);
+        preview.src = url;
+      }
+    });
+
+    async function handleUpload() {
+      if (!selectedFile) return;
+      status.textContent = 'Uploading...';
+
+      const formData = new FormData();
+      formData.append('document', selectedFile);
+
+      try {
+        const response = await fetch('https://httpbin.org/post', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+
+        status.textContent = 'Uploaded successfully!';
+      } catch (err) {
+        status.textContent = 'Error uploading file.';
+        status.style.color = 'red';
+      }
+    }
+  </script>
+</body>
+</html>
