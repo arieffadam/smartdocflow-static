@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,7 +56,6 @@
         const filename = selectedFile.name;
 
         try {
-          // Step 1: Upload
           const uploadRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/upload", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -73,7 +73,6 @@
             return;
           }
 
-          // Step 2: Analyze if selected
           if (analyze) {
             const analyzeRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/analyze", {
               method: "POST",
