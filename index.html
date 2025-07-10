@@ -9,66 +9,27 @@
     h2 { margin-bottom: 1rem; }
     iframe { width: 100%; height: 300px; margin-top: 1rem; }
     #status { margin-top: 1rem; color: green; }
-    button { padding: 0.5rem 1rem; margin-top: 1rem; cursor: pointer; }
+    button { padding: 0.5rem 1rem; margin: 0.5rem 0.5rem 0 0; cursor: pointer; }
   </style>
 </head>
-<input type="file" id="fileInput" />
-<br /><br />
-<button onclick="upload(false)">Upload Only</button>
-<button onclick="upload(true)">Upload + Analyze</button>
+<body>
 
-<script>
-  async function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64Data = reader.result.split(',')[1]; // remove data:*/*;base64,
-        resolve(base64Data);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
+  <h2>Upload Your Document</h2>
 
-  async function upload(analyze) {
-    const file = document.getElementById('fileInput').files[0];
-    if (!file) return alert("Please choose a file.");
+  <input type="file" id="fileInput" accept="application/pdf,image/*" />
+  <br><br>
 
-    const filename = file.name;
-    const content = await toBase64(file);
+  <button onclick="upload(false)">Upload Only</button>
+  <button onclick="upload(true)">Upload + Analyze</button>
 
-    // Step 1: Upload
-    const uploadRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, content }),
-    });
-    const uploadJson = await uploadRes.json();
-    alert("Upload result: " + (uploadJson.message || uploadJson.error));
-
-    // Step 2: Analyze (optional)
-    if (analyze) {
-      const analyzeRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename }),
-      });
-      const analyzeJson = await analyzeRes.json();
-      alert("Analyze result: " + (analyzeJson.message || analyzeJson.error));
-    }
-  }
-</script>
-
-  
-  <body>
-
-
-   
+  <iframe id="preview" title="Preview"></iframe>
+  <p id="status"></p>
 
   <script>
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
     const status = document.getElementById('status');
+
     let selectedFile = null;
 
     fileInput.addEventListener('change', (e) => {
@@ -79,64 +40,66 @@
       }
     });
 
-  /*  async function handleUpload() {
-      if (!selectedFile) return;
+    async function upload(analyze) {
+      if (!selectedFile) {
+        alert("Please choose a file.");
+        return;
+      }
+
+      status.style.color = 'black';
       status.textContent = 'Uploading...';
 
-      const formData = new FormData();
-      formData.append('document', selectedFile);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1];
+        const filename = selectedFile.name;
 
-      try {
-        const response = await fetch('https://httpbin.org/post', {
-          method: 'POST',
-          body: formData
-        });
+        try {
+          // Step 1: Upload
+          const uploadRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename, content: base64 }),
+          });
 
-        if (!response.ok) throw new Error('Upload failed');
+          const uploadJson = await uploadRes.json();
 
-        status.textContent = 'Uploaded successfully!';
-      } catch (err) {
-        status.textContent = 'Error uploading file.';
-        status.style.color = 'red';
-      }
-    }  */
+          if (uploadRes.ok) {
+            status.textContent = "Upload successful!";
+            status.style.color = 'green';
+          } else {
+            status.textContent = "Upload failed: " + (uploadJson.error || "Unknown error");
+            status.style.color = 'red';
+            return;
+          }
 
-    async function handleUpload() {
-  if (!selectedFile) return;
-  status.style.color = 'black';
-  status.textContent = 'Uploading...';
+          // Step 2: Analyze if selected
+          if (analyze) {
+            const analyzeRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/analyze", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ filename }),
+            });
 
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const base64 = reader.result.split(',')[1];
+            const analyzeJson = await analyzeRes.json();
 
-    try {
-      const response = await fetch('https://r2s0ml84d7.execute-api.ap-southeast-1.amazonaws.com/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: selectedFile.name,
-          content: base64
-        })
-      });
+            if (analyzeRes.ok && analyzeJson.text) {
+              alert("Extracted Text:\n\n" + analyzeJson.text);
+            } else {
+              alert("Analysis failed: " + (analyzeJson.error || "No text extracted"));
+            }
+          }
 
-      const result = await response.json();
-      if (response.ok) {
-        status.textContent = 'Uploaded successfully!';
-        status.style.color = 'green';
-      } else {
-        status.textContent = 'Upload failed: ' + result.error;
-        status.style.color = 'red';
-      }
-    } catch (err) {
-      status.textContent = 'Error uploading file.';
-      status.style.color = 'red';
+        } catch (err) {
+          status.textContent = "Error uploading file.";
+          status.style.color = 'red';
+          console.error(err);
+        }
+      };
+
+      reader.readAsDataURL(selectedFile);
     }
-  };
-
-  reader.readAsDataURL(selectedFile);
-}
-
   </script>
+
 </body>
 </html>
