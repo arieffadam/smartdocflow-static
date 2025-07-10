@@ -12,7 +12,55 @@
     button { padding: 0.5rem 1rem; margin-top: 1rem; cursor: pointer; }
   </style>
 </head>
-<body>
+<input type="file" id="fileInput" />
+<br /><br />
+<button onclick="upload(false)">Upload Only</button>
+<button onclick="upload(true)">Upload + Analyze</button>
+
+<script>
+  async function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64Data = reader.result.split(',')[1]; // remove data:*/*;base64,
+        resolve(base64Data);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
+  async function upload(analyze) {
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) return alert("Please choose a file.");
+
+    const filename = file.name;
+    const content = await toBase64(file);
+
+    // Step 1: Upload
+    const uploadRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, content }),
+    });
+    const uploadJson = await uploadRes.json();
+    alert("Upload result: " + (uploadJson.message || uploadJson.error));
+
+    // Step 2: Analyze (optional)
+    if (analyze) {
+      const analyzeRes = await fetch("https://uq9bni0r75.execute-api.ap-southeast-1.amazonaws.com/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      });
+      const analyzeJson = await analyzeRes.json();
+      alert("Analyze result: " + (analyzeJson.message || analyzeJson.error));
+    }
+  }
+</script>
+
+  
+  <body>
   <h2>Upload Your Document</h2>
   <input type="file" id="fileInput" accept="application/pdf,image/*" />
   <iframe id="preview" title="Preview"></iframe>
